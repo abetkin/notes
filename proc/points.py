@@ -1,55 +1,62 @@
-text = '''\
-X23 Z-5 f
-X.3 X.4
-'''
 import re
-reg_any = r'([XZ])-?([.\d]+)\s'
 
 
+class Parser:
 
-def make_points(text):
-    def parse(match):
+    SIMPLE_REG = r'([XZ])(-?[\d.]+)'
+    DIA_REG = r'X(-?[\d.]+) Z(-?[\d.]+)'
+
+    def __init__(self, text):
+        self.text = text
+
+    def parse(self):
+        li = self.dia_points = []
+        for m in re.finditer(self.DIA_REG, self.text):
+            li.append(self.to_regular_point(m))
+        # cut dia points from source
+        text = self.text
+        for m in li:
+            text = ''.join([
+                text[:m['start']],
+                text[m['end']:]
+            ])
+        # now find all simple points
+        li = self.regular_points = []
+        for m in re.finditer(self.DIA_REG, self.text):
+            li.append(self.to_simple_point(m))
+
+
+    def to_simple_point(self, match):
         return {
             match.group(1): match.group(2),
             "start": match.start(),
             "end": match.end(),
         }
-    return [
-        parse(m)
-        for m in re.finditer(reg_any, text)
-    ]
 
-def adjacent(left, right):
-    if left['end'] != right['start']:
-        return
-    X = left.get('X') or right.get('X')
-    Z = left.get('Z') or right.get('Z')
-    return bool(X and Z)
-    
+    def to_dia_point(self, match):
+        dic = {
+            'X': match.group(1),
+            'Z': match.group(2),
+            "start": match.start(),
+            "end": match.end(),
+        }
+        # getting full info:
+        # split by spaces
+        chunks = self.text[:20].split()
+        # find 1st non-match
+        last_match = None
+        reg = r'([RF])(-?[\d.]+)'
+        for chunk in chunks:
+            m = re.match(reg, chunk)
+            if m:
+                last_match = m
+                dic[m.group(1)] = m.group(2)
+        dic['end'] = last_match.end()
+        return dic
 
-def merge_points(points):
-    new_points = []
-    prev = None
-    for p in points:
-        if prev and adjacent(prev, p):
-            # assert coords are different
-            prev['end'] = p['end']
-            prev.setdefault('X', p.get('X'))
-            prev.setdefault('Z', p.get('Z'))
-        else:
-            if prev:
-                new_points.append(prev)
-            prev = p
-    # count the last one
-    if prev:
-        new_points.append(prev)
-    return new_points
 
-def fetch_point(p, text):
-    # - split by spaces
-    # - stop on 1st non-match
-    LEN = 10
-    end = p['start'] + LEN
-    text = text[p['end']:end]
-    reg = r'([RF]-?[\d.]+)+'
-    re.match(reg, text)
+def adjust_dia_point(p):
+    # test impl
+    p['R'] *= 0.5
+    p['F'] *= 2
+    return p
