@@ -12,17 +12,20 @@ class Parser:
     def parse(self):
         li = self.dia_points = []
         for m in re.finditer(self.DIA_REG, self.text):
-            li.append(self.to_regular_point(m))
+            li.append(self.to_dia_point(m))
         # cut dia points from source
         text = self.text
+        #
+        include_chars = list(range(len(text)))
         for m in li:
-            text = ''.join([
-                text[:m['start']],
-                text[m['end']:]
-            ])
+            for i in range(m['start'], m['end']):
+                include_chars[i] = 0
+        text = ''.join(
+            text[i] for i in include_chars if i
+        )
         # now find all simple points
         li = self.regular_points = []
-        for m in re.finditer(self.DIA_REG, self.text):
+        for m in re.finditer(self.SIMPLE_REG, text):
             li.append(self.to_simple_point(m))
 
 
@@ -42,7 +45,8 @@ class Parser:
         }
         # getting full info:
         # split by spaces
-        chunks = self.text[:20].split()
+        after_text = self.text[dic['end']:dic['end']+20]
+        chunks = after_text.split()
         # find 1st non-match
         last_match = None
         reg = r'([RF])(-?[\d.]+)'
@@ -51,7 +55,8 @@ class Parser:
             if m:
                 last_match = m
                 dic[m.group(1)] = m.group(2)
-        dic['end'] = last_match.end()
+        if last_match:
+            dic['end'] += last_match.end()
         return dic
 
 
