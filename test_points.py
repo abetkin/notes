@@ -15,5 +15,7 @@ X1 Z-2 R1 F100
 
 def test_parser(parser):
     parser.parse()
-    print('1.', parser.dia_points)
-    print('2.', parser.regular_points)
+    assert len(parser.dia_points) == 2
+    assert {p['X'] for p in parser.dia_points} == {'23', '1'}
+    assert len(parser.regular_points) == 2
+    assert {p['X'] for p in parser.regular_points} == {'.3', '.4'}
