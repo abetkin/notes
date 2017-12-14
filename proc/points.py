@@ -14,20 +14,26 @@ class Parser:
         for m in re.finditer(self.DIA_REG, self.text):
             li.append(self.to_dia_point(m))
         # cut dia points from source
+        # i.e. replace them with space
         text = self.text
         #
         include_chars = list(range(len(text)))
         for m in li:
             for i in range(m['start'], m['end']):
-                include_chars[i] = 0
+                include_chars[i] = -1
         text = ''.join(
-            text[i] for i in include_chars if i
+            text[i] if i != -1 else ' '
+            for i in include_chars 
         )
         # now find all simple points
         li = self.regular_points = []
         for m in re.finditer(self.SIMPLE_REG, text):
             li.append(self.to_simple_point(m))
 
+        return sorted(
+            self.dia_points + self.regular_points,
+            key=lambda p: p['start']
+        )
 
     def to_simple_point(self, match):
         return {
@@ -42,6 +48,7 @@ class Parser:
             'Z': match.group(2),
             "start": match.start(),
             "end": match.end(),
+            "is_dia": True,
         }
         # getting full info:
         # split by spaces
@@ -60,8 +67,12 @@ class Parser:
         return dic
 
 
-def adjust_dia_point(p):
-    # test impl
-    p['R'] *= 0.5
-    p['F'] *= 2
-    return p
+class DiaCalculator:
+
+    def __init__(self, points):
+        self.points = points
+
+    def run(self):
+        for p in self.points:
+            if p.get('is_dia'):
+                self.handle_dia(p)
