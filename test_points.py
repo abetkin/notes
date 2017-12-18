@@ -1,16 +1,25 @@
 
 import pytest
 
-from proc.points import Parser, inverse_intervals
+from proc.points import Parser, inverse_intervals, IdempTransformer
 
 @pytest.fixture()
 def parser():
     text = '''\
-X23 Z-5 R.5 F400
+X1 Z1 X23 Z-5 R.5 F400
 X.3 X.4 some text
 X1 Z-2 R1 F100
 '''
     return Parser(text)
+
+
+class TestTransformer(IdempTransformer):
+    diagonals = []
+
+    def handle_dia(self, p, prev):
+
+        print(f"({p['X']}, {p['Z']}), ({prev['X']}, {prev['Z']})")
+        p['F'] = 123
 
 
 def test_parser(parser):
@@ -32,10 +41,15 @@ def test_inverse():
 def test_no_change(parser):
     points = parser.parse()
     text = parser.render()
+    assert parser.text.strip() == text
+
+def test_change(parser):
+    points = parser.parse()
+    tr = TestTransformer(points)
+    tr.run()
+    text = parser.render()
     print(text)
-    print()
-    print()
-    assert parser.text == text
+    assert parser.text.strip() != text
 
 def test_cut(parser):
     text = parser.text
@@ -50,3 +64,5 @@ def test_cut(parser):
         )
     new_text = ''.join(li)
     assert new_text.strip() == "X.3 X.4 some text"
+
+
