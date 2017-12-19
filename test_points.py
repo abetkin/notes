@@ -13,21 +13,21 @@ X1 Z-2 R1 F100
     return Parser(text)
 
 
-class TestTransformer(IdempTransformer):
+class _Transformer(IdempTransformer):
     diagonals = []
 
     def handle_dia(self, p, prev):
-
-        print(f"({p['X']}, {p['Z']}), ({prev['X']}, {prev['Z']})")
+        self.diagonals.append((
+            (prev['X'], prev['Z']), (p['X'], p['Z'])
+        ))
         p['F'] = 123
 
 
 def test_parser(parser):
     points = parser.parse()
-    
-    assert len(parser.dia_points) == 2
+    assert len(parser.dia_points) == 3
     assert len(parser.regular_points) == 2
-    assert {p['X'] for p in points} == {'23', '.3', '.4', '1'}
+    assert {p['X'] for p in points} == {'1', '1', '23', '.3', '.4', '1'}
 
 def test_inverse():
     points = [
@@ -45,10 +45,10 @@ def test_no_change(parser):
 
 def test_change(parser):
     points = parser.parse()
-    tr = TestTransformer(points)
+    tr = _Transformer(points)
     tr.run()
     text = parser.render()
-    print(text)
+    assert tr.diagonals == [(('1', '1'), ('23', '-5')), (('.4', '-5'), ('1', '-2'))]
     assert parser.text.strip() != text
 
 def test_cut(parser):

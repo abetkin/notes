@@ -1,4 +1,5 @@
 import re
+import math
 
 
 class Parser:
@@ -105,11 +106,19 @@ class IdempTransformer:
     def run(self):
         for i, p in enumerate(self.points):
             if p.get('is_dia') and self.has_prev():
-                self.handle_dia(p, dict(self.state))
+                self.handle_dia(dict(self.state), p)
             self.state.update(p)
 
-    def handle_dia(self, p, prev):
+    def handle_dia(self, prev, p):
         pass
+
+    def get_diagonal(self, prev, p):
+        prevx = float(prev['X'])
+        prevy = float(prev['Z'])
+        x = float(p['X'])
+        y = float(p['Z'])
+        ret = (x - prevx) ** 2 + (y - prevy) ** 2
+        return math.sqrt(ret)
     
     # def handle_dia(self, p, prev):
     #     import math
